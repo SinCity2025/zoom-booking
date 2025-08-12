@@ -1,0 +1,15 @@
+:root{
+  --brand-1:#6750A4;
+  --brand-2:#7B78FF;
+  --brand-3:#00BFA6;
+  --bg-soft:#F7F7FB;
+}
+body{background:var(--bg-soft);}
+.gradient-bg{background: linear-gradient(90deg, var(--brand-1), var(--brand-2));}
+#calendar{max-width:100%; margin:0 auto;}
+.card h5{color:#2b2b2b}
+.btn-primary{
+  background: linear-gradient(90deg, var(--brand-2), var(--brand-3));
+  border:none;
+}
+.btn-primary:hover{filter:brightness(0.95);}

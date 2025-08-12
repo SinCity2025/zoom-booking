@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="mb-3">إضافة حجز دورة</h5>
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label">اسم الدورة</label>
+            <input type="text" name="title" class="form-control" placeholder="مثال: أساسيات الذكاء الاصطناعي" required>
+          </div>
+          <div class="row g-2">
+            <div class="col-12 mb-2">
+              <label class="form-label">التاريخ</label>
+              <input type="date" name="date" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label class="form-label">وقت البداية</label>
+              <input type="time" name="start_time" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label class="form-label">وقت النهاية</label>
+              <input type="time" name="end_time" class="form-control" required>
+            </div>
+          </div>
+          <button class="btn btn-primary w-100">حفظ الحجز</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-body">
+        <h5 class="mb-3">حجوزاتي</h5>
+        {% if my_bookings %}
+          <ul class="list-group">
+            {% for b in my_bookings %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>📌 {{ b.title }} — {{ b.start.strftime('%Y-%m-%d %H:%M') }} إلى {{ b.end.strftime('%H:%M') }}</span>
+                <span class="badge bg-success">مؤكد</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="text-muted">لا توجد حجوزات بعد.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="mb-3">التقويم العام</h5>
+        <div id="calendar" data-events-url="{{ url_for('api_bookings') }}"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

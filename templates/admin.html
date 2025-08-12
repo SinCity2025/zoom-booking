@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="mb-3">لوحة المسؤول</h5>
+        <p class="text-muted small">يمكنك حذف الحجوزات المخالفة أو المتعارضة.</p>
+        {% if bookings %}
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>الدورة</th>
+                  <th>البداية</th>
+                  <th>النهاية</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for b in bookings %}
+                <tr>
+                  <td>{{ b.title }}</td>
+                  <td>{{ b.start.strftime('%Y-%m-%d %H:%M') }}</td>
+                  <td>{{ b.end.strftime('%Y-%m-%d %H:%M') }}</td>
+                  <td>
+                    <form method="post" action="{{ url_for('admin_delete', bid=b.id) }}" onsubmit="return confirm('حذف الحجز؟');">
+                      <button class="btn btn-sm btn-outline-danger">حذف</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-muted">لا توجد حجوزات.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="mb-3">التقويم العام</h5>
+        <div id="calendar" data-events-url="{{ url_for('api_bookings') }}"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
