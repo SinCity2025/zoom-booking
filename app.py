@@ -37,6 +37,7 @@ class Booking(db.Model):
     owner_name = db.Column(db.String(120), nullable=False)
     owner_email = db.Column(db.String(120), nullable=False)
     is_approved = db.Column(db.Boolean, default=True)
+    trainer_name = db.Column(db.String(120), nullable=True)  # <-- جديد
 
 def create_default_admin():
     admin_email = os.environ.get("DEFAULT_ADMIN_EMAIL", "admin@site.local")
@@ -48,10 +49,18 @@ def create_default_admin():
         db.session.add(u)
         db.session.commit()
 
+from sqlalchemy import text
+
 @app.before_request
-def init_db():
+def init_db_and_columns():
     db.create_all()
+    # إضافة عمود trainer_name لو ناقص (ترقية آمنة بدون حذف بيانات)
+    with db.engine.connect() as conn:
+        cols = [r[1] for r in conn.execute(text("PRAGMA table_info(booking)")).fetchall()]
+        if "trainer_name" not in cols:
+            conn.execute(text("ALTER TABLE booking ADD COLUMN trainer_name VARCHAR(120)"))
     create_default_admin()
+
 
 # --------------- Helpers ---------------
 def current_user():
