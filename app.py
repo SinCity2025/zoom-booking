@@ -48,7 +48,7 @@ def create_default_admin():
         db.session.add(u)
         db.session.commit()
 
-@app.before_first_request
+@app.before_request
 def init_db():
     db.create_all()
     create_default_admin()
