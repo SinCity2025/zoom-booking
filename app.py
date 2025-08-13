@@ -1,38 +1,39 @@
 import os
 from datetime import datetime
+from io import StringIO
+import csv
+
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, Response
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from sqlalchemy import text, inspect
-from io import StringIO
-import csv
 
-# مسارات محلية لـ SQLite (تستخدم فقط إذا ما فيه DATABASE_URL)
+# ===== إعدادات أساسية =====
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "app.db")
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
-# 🔗 استخدم Postgres إن وجد، وإلا ارجع لـ SQLite محلي
+# ===== اختيار قاعدة البيانات: Postgres إن وجد، وإلا SQLite =====
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL:
-    # بعض المنصات ترسلها postgres:// ونحوّلها لصيغة sqlalchemy الصحيحة
+    # بعض المنصات تعطي postgres:// — نحولها لصيغة sqlalchemy
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
-    # SSL على Render
+    # إضافة sslmode=require عند الحاجة (Render)
     if "sslmode=" not in DATABASE_URL:
         sep = "&" if "?" in DATABASE_URL else "?"
         DATABASE_URL = f"{DATABASE_URL}{sep}sslmode=require"
     app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 else:
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+    # fallback محلي
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_PATH
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
 db = SQLAlchemy(app)
 
-# ---------------- Models ----------------
+# ===== النماذج =====
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
@@ -56,6 +57,7 @@ class Booking(db.Model):
     is_approved = db.Column(db.Boolean, default=True)
     trainer_name = db.Column(db.String(120), nullable=True)  # اسم المدرب
 
+# ===== إنشاء أدمن افتراضي =====
 def create_default_admin():
     admin_email = os.environ.get("DEFAULT_ADMIN_EMAIL", "admin@site.local")
     admin_pass = os.environ.get("DEFAULT_ADMIN_PASS", "Admin#2025")
@@ -66,7 +68,7 @@ def create_default_admin():
         db.session.add(u)
         db.session.commit()
 
-# ✅ تهيئة متوافقة مع Postgres وSQLite (بدل PRAGMA)
+# ===== تهيئة القاعدة (متوافقة مع Postgres/SQLite) =====
 @app.before_request
 def init_db_and_columns():
     # إنشاء الجداول إن لم تكن موجودة
@@ -77,15 +79,23 @@ def init_db_and_columns():
     has_table = insp.has_table("booking")
     cols = [c["name"] for c in insp.get_columns("booking")] if has_table else []
 
-    # إضافة trainer_name إذا كان ناقص
+    # إضافة trainer_name إن كان ناقص
     if has_table and "trainer_name" not in cols:
+        dialect = db.engine.dialect.name  # "postgresql" أو "sqlite"...
         with db.engine.connect() as conn:
-            conn.execute(text("ALTER TABLE booking ADD COLUMN trainer_name VARCHAR(120)"))
+            if dialect == "postgresql":
+                conn.execute(text(
+                    "ALTER TABLE booking ADD COLUMN IF NOT EXISTS trainer_name VARCHAR(120)"
+                ))
+            else:
+                conn.execute(text(
+                    "ALTER TABLE booking ADD COLUMN trainer_name VARCHAR(120)"
+                ))
 
-    # إنشاء أدمن افتراضي إن لم يوجد
+    # إنشاء أدمن افتراضي
     create_default_admin()
 
-# --------------- Security headers for Canvas iframe ---------------
+# ===== رؤوس أمان أساسية (للـ iframe إن احتجته) =====
 @app.after_request
 def set_canvas_headers(resp):
     resp.headers["Content-Security-Policy"] = "frame-ancestors 'self' https://*.instructure.com https://canvas.instructure.com"
@@ -94,11 +104,12 @@ def set_canvas_headers(resp):
     resp.headers["X-Content-Type-Options"] = "nosniff"
     return resp
 
+# ===== صحة الخدمة =====
 @app.route("/health")
 def health():
     return {"status": "ok"}
 
-# ---------------- Helpers ----------------
+# ===== Helpers =====
 def current_user():
     uid = session.get("uid")
     return User.query.get(uid) if uid else None
@@ -122,16 +133,16 @@ def admin_required(view):
         return view(*args, **kwargs)
     return wrapped
 
-# ---------------- Routes ----------------
+# ===== الصفحات =====
 @app.route("/")
 def index():
     return render_template("index.html", user=current_user())
 
-@app.route("/login", methods=["GET","POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        email = request.form.get("email","").strip().lower()
-        pw = request.form.get("password","")
+        email = request.form.get("email", "").strip().lower()
+        pw = request.form.get("password", "")
         user = User.query.filter_by(email=email).first()
         if user and user.check_password(pw):
             session["uid"] = user.id
@@ -146,12 +157,12 @@ def logout():
     flash("تم تسجيل الخروج.", "info")
     return redirect(url_for("index"))
 
-@app.route("/register", methods=["GET","POST"])
+@app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        name = request.form.get("name","").strip()
-        email = request.form.get("email","").strip().lower()
-        password = request.form.get("password","")
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
         if not (name and email and password):
             flash("يرجى تعبئة جميع الحقول.", "warning")
             return render_template("register.html")
@@ -166,16 +177,17 @@ def register():
         return redirect(url_for("login"))
     return render_template("register.html")
 
-@app.route("/dashboard", methods=["GET","POST"])
+@app.route("/dashboard", methods=["GET", "POST"])
 @login_required
 def dashboard():
     user = current_user()
     if request.method == "POST":
-        title = request.form.get("title","").strip()
-        date = request.form.get("date","")
-        start_time = request.form.get("start_time","")
-        end_time = request.form.get("end_time","")
-        trainer_name = request.form.get("trainer_name","").strip() or user.name
+        title = request.form.get("title", "").strip()
+        date = request.form.get("date", "")
+        start_time = request.form.get("start_time", "")
+        end_time = request.form.get("end_time", "")
+        trainer_name = request.form.get("trainer_name", "").strip() or user.name
+
         if not (title and date and start_time and end_time):
             flash("يرجى إدخال جميع البيانات.", "warning")
         else:
@@ -184,7 +196,10 @@ def dashboard():
                 end_dt = datetime.fromisoformat(f"{date}T{end_time}")
                 if end_dt <= start_dt:
                     raise ValueError("invalid range")
-                conflict = Booking.query.filter(Booking.end > start_dt, Booking.start < end_dt).first()
+
+                conflict = Booking.query.filter(
+                    Booking.end > start_dt, Booking.start < end_dt
+                ).first()
                 if conflict:
                     flash("الموعد متعارض مع حجز آخر.", "danger")
                 else:
@@ -195,13 +210,15 @@ def dashboard():
                         owner_name=user.name,
                         owner_email=user.email,
                         is_approved=True,
-                        trainer_name=trainer_name
+                        trainer_name=trainer_name,
                     )
-                    db.session.add(b); db.session.commit()
+                    db.session.add(b)
+                    db.session.commit()
                     flash("تم إضافة الحجز بنجاح.", "success")
                     return redirect(url_for("dashboard"))
             except Exception:
                 flash("صيغة التاريخ/الوقت غير صحيحة.", "danger")
+
     my_bookings = Booking.query.filter_by(owner_email=user.email).order_by(Booking.start.desc()).all()
     return render_template("dashboard.html", user=user, my_bookings=my_bookings)
 
@@ -215,25 +232,29 @@ def admin():
 @admin_required
 def admin_delete(bid):
     b = Booking.query.get_or_404(bid)
-    db.session.delete(b); db.session.commit()
+    db.session.delete(b)
+    db.session.commit()
     flash("تم حذف الحجز.", "info")
     return redirect(url_for("admin"))
 
-# تصدير CSV مفيد للنسخ الاحتياطي
+# ===== تصدير CSV للنسخ الاحتياطي =====
 @app.route("/admin/export_csv")
 @admin_required
 def export_csv():
     si = StringIO()
     writer = csv.writer(si)
-    writer.writerow(["id","title","trainer_name","start","end","owner_name","owner_email","is_approved"])
+    writer.writerow(["id", "title", "trainer_name", "start", "end", "owner_name", "owner_email", "is_approved"])
     for b in Booking.query.order_by(Booking.start.asc()).all():
-        writer.writerow([b.id, b.title, b.trainer_name or "", b.start.isoformat(), b.end.isoformat(),
-                         b.owner_name, b.owner_email, int(b.is_approved)])
+        writer.writerow([
+            b.id, b.title, b.trainer_name or "",
+            b.start.isoformat(), b.end.isoformat(),
+            b.owner_name, b.owner_email, int(b.is_approved)
+        ])
     output = si.getvalue().encode("utf-8-sig")
     return Response(output, mimetype="text/csv",
-                    headers={"Content-Disposition":"attachment; filename=bookings.csv"})
+                    headers={"Content-Disposition": "attachment; filename=bookings.csv"})
 
-# API للتقويم + معلومات المدرب
+# ===== API للتقويم ومعلومات المدرب =====
 @app.route("/api/bookings")
 def api_bookings():
     events = [{
@@ -241,9 +262,10 @@ def api_bookings():
         "title": b.title,  # اسم الدورة فقط (التفاصيل في tooltip)
         "start": b.start.isoformat(),
         "end": b.end.isoformat(),
-        "extendedProps": { "trainer": b.trainer_name or b.owner_name }
+        "extendedProps": {"trainer": b.trainer_name or b.owner_name}
     } for b in Booking.query.all()]
     return jsonify(events)
 
+# ===== تشغيل محلي =====
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), debug=True)
