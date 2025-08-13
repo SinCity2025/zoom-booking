@@ -2,14 +2,20 @@
 {% block content %}
 <div class="row g-4 align-items-center">
   <div class="col-lg-6">
-    <h1 class="display-6 fw-bold mb-3">إدارة حجوزات قاعة الزوم بسهولة</h1>
-    <p class="lead">أنشئ دوراتك، حدد التاريخ والوقت، واطّلع على التقويم لتجنّب التعارضات. تتوفر لوحتان: للمسؤول والمستخدم.</p>
-    {% if not user %}
-      <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg shadow-sm">ابدأ الآن</a>
-    {% else %}
-      <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg shadow-sm">اذهب للوحة المستخدم</a>
-    {% endif %}
+    <div class="hero">
+      <h1 class="display-6 fw-bold mb-3">إدارة حجوزات قاعة الزوم بسهولة</h1>
+      <p class="lead">
+        أنشئ دوراتك، حدد التاريخ والوقت، واطّلع على التقويم لتجنّب التعارضات.
+        تتوفر لوحتان: للمسؤول والمستخدم.
+      </p>
+      {% if not user %}
+        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg shadow-sm">ابدأ الآن</a>
+      {% else %}
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg shadow-sm">اذهب للوحة المستخدم</a>
+      {% endif %}
+    </div>
   </div>
+
   <div class="col-lg-6">
     <div class="card shadow-sm">
       <div class="card-body">
