@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="row g-4">
-  <div class="col-lg-5">
+<div class="row g-3 g-md-4">
+  <div class="col-lg-5 order-2 order-lg-1">
     <div class="card shadow-sm">
       <div class="card-body">
         <h5 class="mb-3">إضافة حجز دورة</h5>
@@ -11,24 +11,24 @@
             <input type="text" name="title" class="form-control" placeholder="مثال: أساسيات الذكاء الاصطناعي" required>
           </div>
           <div class="mb-3">
-          <label class="form-label">اسم المدرب</label>
-          <input type="text" name="trainer_name" class="form-control" placeholder="مثال: أحمد الغامدي">
+            <label class="form-label">اسم المدرب</label>
+            <input type="text" name="trainer_name" class="form-control" placeholder="مثال: منصور مباركي">
           </div>
           <div class="row g-2">
             <div class="col-12 mb-2">
               <label class="form-label">التاريخ</label>
               <input type="date" name="date" class="form-control" required>
             </div>
-            <div class="col-md-6 mb-2">
+            <div class="col-6 mb-2">
               <label class="form-label">وقت البداية</label>
               <input type="time" name="start_time" class="form-control" required>
             </div>
-            <div class="col-md-6 mb-2">
+            <div class="col-6 mb-2">
               <label class="form-label">وقت النهاية</label>
               <input type="time" name="end_time" class="form-control" required>
             </div>
           </div>
-          <button class="btn btn-primary w-100">حفظ الحجز</button>
+          <button class="btn btn-primary w-100 mt-2">حفظ الحجز</button>
         </form>
       </div>
     </div>
@@ -39,9 +39,12 @@
         {% if my_bookings %}
           <ul class="list-group">
             {% for b in my_bookings %}
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>📌 {{ b.title }} — {{ b.start.strftime('%Y-%m-%d %H:%M') }} إلى {{ b.end.strftime('%H:%M') }}</span>
-                <span class="badge bg-success">مؤكد</span>
+              <li class="list-group-item d-flex justify-content-between align-items-center flex-column flex-md-row">
+                <span class="text-center text-md-start">
+                  📌 {{ b.title }} — المدرب: {{ b.trainer_name or b.owner_name }} —
+                  {{ b.start.strftime('%Y-%m-%d %H:%M') }} إلى {{ b.end.strftime('%H:%M') }}
+                </span>
+                <span class="badge bg-success mt-2 mt-md-0">مؤكد</span>
               </li>
             {% endfor %}
           </ul>
@@ -52,7 +55,7 @@
     </div>
   </div>
 
-  <div class="col-lg-7">
+  <div class="col-lg-7 order-1 order-lg-2">
     <div class="card shadow-sm">
       <div class="card-body">
         <h5 class="mb-3">التقويم العام</h5>
