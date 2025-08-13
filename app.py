@@ -209,7 +209,22 @@ def admin_delete(bid):
     db.session.delete(b); db.session.commit()
     flash("تم حذف الحجز.", "info")
     return redirect(url_for("admin"))
+from io import StringIO
+import csv
+from flask import Response
 
+@app.route("/admin/export_csv")
+@admin_required
+def export_csv():
+    si = StringIO()
+    writer = csv.writer(si)
+    writer.writerow(["id","title","trainer_name","start","end","owner_name","owner_email","is_approved"])
+    for b in Booking.query.order_by(Booking.start.asc()).all():
+        writer.writerow([b.id, b.title, b.trainer_name or "", b.start.isoformat(), b.end.isoformat(),
+                         b.owner_name, b.owner_email, int(b.is_approved)])
+    output = si.getvalue().encode("utf-8-sig")
+    return Response(output, mimetype="text/csv",
+                    headers={"Content-Disposition":"attachment; filename=bookings.csv"})
 @app.route("/api/bookings")
 def api_bookings():
     events = [{
