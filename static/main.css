@@ -1,4 +1,4 @@
-/* ===== لوحة ألوان العلامة ===== */
+/* ===== لوحة ألوان ===== */
 :root{
   --brand-1:#6E56CF;   /* بنفسجي */
   --brand-2:#7B78FF;   /* موف */
@@ -8,6 +8,9 @@
   --bg:#F6F7FB;        /* خلفية ناعمة */
   --card:#FFFFFF;
   --ring:#E7E7F7;
+  --tip-bg:#1F1B2E;    /* خلفية التولتيب */
+  --tip-fg:#fff;
+  --tip-ring:rgba(123,120,255,.35);
 }
 
 html,body{height:100%}
@@ -43,7 +46,7 @@ body{
 .card .card-body{ padding: 18px; }
 .card h5{ color:#2b2b2b }
 
-/* ===== بُطولة رئيسية (الهيدر في الصفحة الرئيسية) ===== */
+/* ===== البلوك الافتتاحي (هيدر الصفحة الرئيسية) ===== */
 .hero{
   background: radial-gradient(1000px 400px at 10% -10%, rgba(123,120,255,.18), transparent 70%),
               radial-gradient(900px 380px at 110% -20%, rgba(0,191,166,.18), transparent 70%);
@@ -125,6 +128,33 @@ body{
   color: var(--brand-1);
   font-weight: 700;
 }
+
+/* ===== Tooltip ملوّن (Bootstrap) ===== */
+.tooltip{ pointer-events: none; } /* يمنع اللزق فوق العنصر */
+.tooltip .tooltip-inner{
+  max-width: 280px;
+  text-align: start;
+  background: var(--tip-bg);
+  color: var(--tip-fg);
+  padding: 10px 12px;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.25), 0 4px 10px rgba(0,0,0,.15);
+  border: 1px solid var(--tip-ring);
+}
+.tooltip.bs-tooltip-auto[data-popper-placement^=top] .tooltip-arrow::before,
+.tooltip.bs-tooltip-top .tooltip-arrow::before{
+  border-top-color: var(--tip-bg);
+}
+.tooltip.bs-tooltip-auto[data-popper-placement^=bottom] .tooltip-arrow::before,
+.tooltip.bs-tooltip-bottom .tooltip-arrow::before{
+  border-bottom-color: var(--tip-bg);
+}
+
+/* محتوى التولتيب */
+.zmb-tip{ display: grid; gap: 6px; }
+.zmb-tip-row{ display:flex; gap:8px; align-items:center; }
+.zmb-tip-row strong{ min-width:70px; color:#C3BEFF; font-weight:700; }
+.zmb-ico{ width:20px; text-align:center; }
 
 /* تحسين اللمس على الجوال */
 @media (max-width: 768px){
