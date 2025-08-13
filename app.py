@@ -1,9 +1,10 @@
-\
 import os
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+from sqlalchemy import text
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "app.db")
@@ -37,7 +38,7 @@ class Booking(db.Model):
     owner_name = db.Column(db.String(120), nullable=False)
     owner_email = db.Column(db.String(120), nullable=False)
     is_approved = db.Column(db.Boolean, default=True)
-    trainer_name = db.Column(db.String(120), nullable=True)  # <-- جديد
+    trainer_name = db.Column(db.String(120), nullable=True)  # جديد
 
 def create_default_admin():
     admin_email = os.environ.get("DEFAULT_ADMIN_EMAIL", "admin@site.local")
@@ -49,44 +50,15 @@ def create_default_admin():
         db.session.add(u)
         db.session.commit()
 
-from sqlalchemy import text
-
 @app.before_request
 def init_db_and_columns():
+    # تهيئة قاعدة البيانات + إضافة عمود trainer_name إذا كان ناقص (ترقية آمنة)
     db.create_all()
-    # إضافة عمود trainer_name لو ناقص (ترقية آمنة بدون حذف بيانات)
     with db.engine.connect() as conn:
         cols = [r[1] for r in conn.execute(text("PRAGMA table_info(booking)")).fetchall()]
         if "trainer_name" not in cols:
             conn.execute(text("ALTER TABLE booking ADD COLUMN trainer_name VARCHAR(120)"))
     create_default_admin()
-
-
-# --------------- Helpers ---------------
-def current_user():
-    uid = session.get("uid")
-    return User.query.get(uid) if uid else None
-
-def login_required(view):
-    from functools import wraps
-    @wraps(view)
-    def wrapped(*args, **kwargs):
-        if not current_user():
-            flash("الرجاء تسجيل الدخول.", "warning")
-            return redirect(url_for("login"))
-        return view(*args, **kwargs)
-    return wrapped
-
-def admin_required(view):
-    from functools import wraps
-    @wraps(view)
-    def wrapped(*args, **kwargs):
-        user = current_user()
-        if not user or not user.is_admin:
-            flash("صلاحيات غير كافية.", "danger")
-            return redirect(url_for("dashboard"))
-        return view(*args, **kwargs)
-    return wrapped
 
 # --------------- Security headers for Canvas iframe ---------------
 @app.after_request
@@ -100,6 +72,30 @@ def set_canvas_headers(resp):
 @app.route("/health")
 def health():
     return {"status": "ok"}
+
+# ---------------- Helpers ----------------
+def current_user():
+    uid = session.get("uid")
+    return User.query.get(uid) if uid else None
+
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not current_user():
+            flash("الرجاء تسجيل الدخول.", "warning")
+            return redirect(url_for("login"))
+        return view(*args, **kwargs)
+    return wrapped
+
+def admin_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        user = current_user()
+        if not user or not user.is_admin:
+            flash("صلاحيات غير كافية.", "danger")
+            return redirect(url_for("dashboard"))
+        return view(*args, **kwargs)
+    return wrapped
 
 # ---------------- Routes ----------------
 @app.route("/")
@@ -154,6 +150,7 @@ def dashboard():
         date = request.form.get("date","")
         start_time = request.form.get("start_time","")
         end_time = request.form.get("end_time","")
+        trainer_name = request.form.get("trainer_name","").strip() or user.name
         if not (title and date and start_time and end_time):
             flash("يرجى إدخال جميع البيانات.", "warning")
         else:
@@ -162,19 +159,24 @@ def dashboard():
                 end_dt = datetime.fromisoformat(f"{date}T{end_time}")
                 if end_dt <= start_dt:
                     raise ValueError("invalid range")
-                # منع التعارض
                 conflict = Booking.query.filter(Booking.end > start_dt, Booking.start < end_dt).first()
                 if conflict:
                     flash("الموعد متعارض مع حجز آخر.", "danger")
                 else:
-                    b = Booking(title=title, start=start_dt, end=end_dt,
-                                owner_name=user.name, owner_email=user.email, is_approved=True)
+                    b = Booking(
+                        title=title,
+                        start=start_dt,
+                        end=end_dt,
+                        owner_name=user.name,
+                        owner_email=user.email,
+                        is_approved=True,
+                        trainer_name=trainer_name
+                    )
                     db.session.add(b); db.session.commit()
                     flash("تم إضافة الحجز بنجاح.", "success")
                     return redirect(url_for("dashboard"))
             except Exception:
                 flash("صيغة التاريخ/الوقت غير صحيحة.", "danger")
-
     my_bookings = Booking.query.filter_by(owner_email=user.email).order_by(Booking.start.desc()).all()
     return render_template("dashboard.html", user=user, my_bookings=my_bookings)
 
@@ -196,7 +198,7 @@ def admin_delete(bid):
 def api_bookings():
     events = [{
         "id": b.id,
-        "title": b.title,
+        "title": f"{b.title} — {b.trainer_name or b.owner_name}",
         "start": b.start.isoformat(),
         "end": b.end.isoformat()
     } for b in Booking.query.all()]
