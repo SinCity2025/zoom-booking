@@ -198,9 +198,12 @@ def admin_delete(bid):
 def api_bookings():
     events = [{
         "id": b.id,
-        "title": f"{b.title} — {b.trainer_name or b.owner_name}",
+        "title": b.title,  # نخلي العنوان اسم الدورة فقط
         "start": b.start.isoformat(),
-        "end": b.end.isoformat()
+        "end": b.end.isoformat(),
+        "extendedProps": {
+            "trainer": b.trainer_name or b.owner_name
+        }
     } for b in Booking.query.all()]
     return jsonify(events)
 
