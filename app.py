@@ -20,14 +20,17 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL:
     # بعض المنصات تعطي postgres:// — نحولها لصيغة sqlalchemy
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
-    # إضافة sslmode=require عند الحاجة (Render)
+    DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL:
+    # لو الرابط جاي postgres:// حوِّله إلى postgresql+psycopg://
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+    if DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
     if "sslmode=" not in DATABASE_URL:
         sep = "&" if "?" in DATABASE_URL else "?"
         DATABASE_URL = f"{DATABASE_URL}{sep}sslmode=require"
     app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 else:
-    # fallback محلي
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_PATH
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
