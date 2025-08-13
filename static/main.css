@@ -1,19 +1,139 @@
-/* ضبط عام */
-#calendar{max-width:100%; margin:0 auto;}
-/* حجم عنوان التقويم والأزرار على الجوال */
-@media (max-width: 768px){
-  .fc .fc-toolbar{gap:8px; flex-wrap:wrap;}
-  .fc .fc-toolbar-title{font-size:16px; line-height:1.2;}
-  .fc .fc-button{padding:6px 10px; border-radius:10px; font-size:13px;}
-  /* خلايا الشهر مضغوطة لكن واضحة */
-  .fc .fc-daygrid-day-frame{min-height:60px;}            /* كان 70-80؛ قللناه */
-  .fc .fc-daygrid-day-top{flex-direction:row-reverse; gap:6px;}
-  .fc .fc-daygrid-event{padding:2px 4px; border-radius:8px; font-size:12px;}
-  /* منع أي تمرير أفقي */
-  .fc, .fc-scroller-harness, .fc-scroller{overflow: hidden !important;}
+/* ===== لوحة ألوان العلامة ===== */
+:root{
+  --brand-1:#6E56CF;   /* بنفسجي */
+  --brand-2:#7B78FF;   /* موف */
+  --brand-3:#00BFA6;   /* فيروزي */
+  --ink:#222;
+  --muted:#8b8b8b;
+  --bg:#F6F7FB;        /* خلفية ناعمة */
+  --card:#FFFFFF;
+  --ring:#E7E7F7;
 }
 
-/* تحسين قابلية القراءة على الشاشات الكبيرة قليلًا */
-@media (min-width: 769px){
-  .fc .fc-toolbar-title{font-size:20px;}
+html,body{height:100%}
+body{
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* ===== شريط علوي متدرّج ===== */
+.gradient-bg{
+  background: linear-gradient(90deg, var(--brand-1), var(--brand-2));
+}
+
+/* ===== أزرار جميلة ===== */
+.btn-primary{
+  background: linear-gradient(90deg, var(--brand-2), var(--brand-3));
+  border: none;
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+}
+.btn-primary:hover{ filter: brightness(.95); }
+
+/* ===== بطاقات بزوايا ناعمة وظلال خفيفة ===== */
+.card{
+  background: var(--card);
+  border: 1px solid rgba(0,0,0,.04);
+  border-radius: 16px;
+  box-shadow:
+     0 10px 25px rgba(34, 34, 34, 0.06),
+     0 2px  6px rgba(34, 34, 34, 0.05);
+}
+.card .card-body{ padding: 18px; }
+.card h5{ color:#2b2b2b }
+
+/* ===== بُطولة رئيسية (الهيدر في الصفحة الرئيسية) ===== */
+.hero{
+  background: radial-gradient(1000px 400px at 10% -10%, rgba(123,120,255,.18), transparent 70%),
+              radial-gradient(900px 380px at 110% -20%, rgba(0,191,166,.18), transparent 70%);
+  border-radius: 18px;
+  padding: 24px;
+}
+
+/* ===== التقويم: FullCalendar ===== */
+#calendar{ max-width:100%; margin:0 auto; }
+
+/* شريط الأدوات */
+.fc .fc-toolbar{
+  gap: 10px; flex-wrap: wrap;
+}
+.fc .fc-toolbar-title{
+  font-weight: 800;
+  font-size: 20px;
+  color: #2d2a40;
+}
+
+/* أزرار التقويم */
+.fc .fc-button{
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 0;
+  background: linear-gradient(90deg, var(--brand-1), var(--brand-2));
+  box-shadow: 0 6px 14px rgba(110,86,207,.25);
+}
+.fc .fc-button:disabled{
+  filter: grayscale(.2) brightness(.95);
+  opacity:.8;
+}
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active{
+  background: linear-gradient(90deg, var(--brand-2), var(--brand-3));
+  box-shadow: 0 6px 14px rgba(0,191,166,.25);
+}
+
+/* شبكة الشهر */
+.fc .fc-daygrid-day{
+  background: #fff;
+}
+.fc .fc-daygrid-day-frame{
+  min-height: 86px; /* مريح للجوال لكن يعرض الشهر كامل */
+  padding: 2px;
+}
+.fc .fc-daygrid-day-top{
+  flex-direction: row-reverse;
+  gap: 6px;
+}
+.fc .fc-daygrid-day-number{
+  color: #3a3a54;
+  font-weight: 600;
+}
+
+/* اليوم الحالي بحلقة ملوّنة */
+.fc .fc-day-today{
+  background: linear-gradient(0deg, rgba(123,120,255,.08), rgba(0,0,0,0)) !important;
+  position: relative;
+}
+.fc .fc-day-today .fc-daygrid-day-number{
+  background: #fff;
+  border: 2px solid var(--ring);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+/* حدث = كبسولة ملوّنة */
+.fc .fc-daygrid-event{
+  border: 0;
+  border-radius: 10px;
+  padding: 3px 8px;
+  font-size: 12px;
+  color: #fff;
+  background: linear-gradient(90deg, var(--brand-2), var(--brand-3));
+  box-shadow: 0 6px 14px rgba(0,0,0,.08);
+}
+.fc .fc-daygrid-more-link{
+  color: var(--brand-1);
+  font-weight: 700;
+}
+
+/* تحسين اللمس على الجوال */
+@media (max-width: 768px){
+  .container{ padding-left: 12px; padding-right: 12px; }
+  .navbar-brand{ font-size: 1rem; }
+  .fc .fc-toolbar-title{ font-size: 16px; }
+  .fc .fc-button{ padding: 6px 10px; font-size: 13px; }
+  .fc .fc-daygrid-day-frame{ min-height: 72px; }
+}
+
+/* فوتر */
+footer{ color: var(--muted); }
