@@ -26,7 +26,7 @@ if DATABASE_URL:
         DATABASE_URL = f"{DATABASE_URL}{sep}sslmode=require"
     app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 else:
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_PATH
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
