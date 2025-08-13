@@ -16,21 +16,24 @@ DB_PATH = os.path.join(BASE_DIR, "app.db")
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
-# ===== اختيار قاعدة البيانات: Postgres إن وجد، وإلا SQLite =====
+# ===== اختيار قاعدة البيانات: Postgres (psycopg3) إن وجد، وإلا SQLite =====
 DATABASE_URL = os.environ.get("DATABASE_URL")
+
 if DATABASE_URL:
-    # بعض المنصات تعطي postgres:// — نحولها لصيغة sqlalchemy
-    DATABASE_URL = os.environ.get("DATABASE_URL")
-if DATABASE_URL:
-    # لو الرابط جاي postgres:// حوِّله إلى postgresql+psycopg://
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
-    if DATABASE_URL.startswith("postgresql://"):
+    # توحيد السائق إلى psycopg3
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+    elif DATABASE_URL.startswith("postgresql://") and "+psycopg" not in DATABASE_URL:
         DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+
+    # إضافة sslmode=require إذا لم يكن موجودًا (مهم لـ Render)
     if "sslmode=" not in DATABASE_URL:
         sep = "&" if "?" in DATABASE_URL else "?"
         DATABASE_URL = f"{DATABASE_URL}{sep}sslmode=require"
+
     app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 else:
+    # رجوع آمن إلى SQLite محليًا
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_PATH
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
