@@ -9,9 +9,25 @@ from sqlalchemy import text
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "app.db")
 
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DB_PATH = os.path.join(BASE_DIR, "app.db")
+
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_PATH
+
+# 🔗 استخدم Postgres إن وجد، وإلا ارجع لـ SQLite محلي
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL:
+    # Render/Heroku قد يرسلونها كـ postgres:// ونحوّلها للصيغة الصحيحة
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+    # أضف sslmode=require إن ما كان موجودًا (يُفضل على Render)
+    if "sslmode=" not in DATABASE_URL:
+        sep = "&" if "?" in DATABASE_URL else "?"
+        DATABASE_URL = f"{DATABASE_URL}{sep}sslmode=require"
+    app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_PATH
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
