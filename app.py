@@ -1,14 +1,14 @@
 import os
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, Response
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-from sqlalchemy import text
+from sqlalchemy import text, inspect
+from io import StringIO
+import csv
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, "app.db")
-
+# مسارات محلية لـ SQLite (تستخدم فقط إذا ما فيه DATABASE_URL)
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "app.db")
 
@@ -18,9 +18,9 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 # 🔗 استخدم Postgres إن وجد، وإلا ارجع لـ SQLite محلي
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL:
-    # Render/Heroku قد يرسلونها كـ postgres:// ونحوّلها للصيغة الصحيحة
+    # بعض المنصات ترسلها postgres:// ونحوّلها لصيغة sqlalchemy الصحيحة
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
-    # أضف sslmode=require إن ما كان موجودًا (يُفضل على Render)
+    # SSL على Render
     if "sslmode=" not in DATABASE_URL:
         sep = "&" if "?" in DATABASE_URL else "?"
         DATABASE_URL = f"{DATABASE_URL}{sep}sslmode=require"
@@ -54,7 +54,7 @@ class Booking(db.Model):
     owner_name = db.Column(db.String(120), nullable=False)
     owner_email = db.Column(db.String(120), nullable=False)
     is_approved = db.Column(db.Boolean, default=True)
-    trainer_name = db.Column(db.String(120), nullable=True)  # جديد
+    trainer_name = db.Column(db.String(120), nullable=True)  # اسم المدرب
 
 def create_default_admin():
     admin_email = os.environ.get("DEFAULT_ADMIN_EMAIL", "admin@site.local")
@@ -66,14 +66,23 @@ def create_default_admin():
         db.session.add(u)
         db.session.commit()
 
+# ✅ تهيئة متوافقة مع Postgres وSQLite (بدل PRAGMA)
 @app.before_request
 def init_db_and_columns():
-    # تهيئة قاعدة البيانات + إضافة عمود trainer_name إذا كان ناقص (ترقية آمنة)
+    # إنشاء الجداول إن لم تكن موجودة
     db.create_all()
-    with db.engine.connect() as conn:
-        cols = [r[1] for r in conn.execute(text("PRAGMA table_info(booking)")).fetchall()]
-        if "trainer_name" not in cols:
+
+    # فحص أعمدة جدول booking بطريقة محايدة للمحرك
+    insp = inspect(db.engine)
+    has_table = insp.has_table("booking")
+    cols = [c["name"] for c in insp.get_columns("booking")] if has_table else []
+
+    # إضافة trainer_name إذا كان ناقص
+    if has_table and "trainer_name" not in cols:
+        with db.engine.connect() as conn:
             conn.execute(text("ALTER TABLE booking ADD COLUMN trainer_name VARCHAR(120)"))
+
+    # إنشاء أدمن افتراضي إن لم يوجد
     create_default_admin()
 
 # --------------- Security headers for Canvas iframe ---------------
@@ -209,10 +218,8 @@ def admin_delete(bid):
     db.session.delete(b); db.session.commit()
     flash("تم حذف الحجز.", "info")
     return redirect(url_for("admin"))
-from io import StringIO
-import csv
-from flask import Response
 
+# تصدير CSV مفيد للنسخ الاحتياطي
 @app.route("/admin/export_csv")
 @admin_required
 def export_csv():
@@ -225,16 +232,16 @@ def export_csv():
     output = si.getvalue().encode("utf-8-sig")
     return Response(output, mimetype="text/csv",
                     headers={"Content-Disposition":"attachment; filename=bookings.csv"})
+
+# API للتقويم + معلومات المدرب
 @app.route("/api/bookings")
 def api_bookings():
     events = [{
         "id": b.id,
-        "title": b.title,  # نخلي العنوان اسم الدورة فقط
+        "title": b.title,  # اسم الدورة فقط (التفاصيل في tooltip)
         "start": b.start.isoformat(),
         "end": b.end.isoformat(),
-        "extendedProps": {
-            "trainer": b.trainer_name or b.owner_name
-        }
+        "extendedProps": { "trainer": b.trainer_name or b.owner_name }
     } for b in Booking.query.all()]
     return jsonify(events)
 
