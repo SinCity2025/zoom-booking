@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="row g-4">
-  <div class="col-lg-5">
+  <div class="col-12">
     <div class="card shadow-sm">
       <div class="card-body">
         <h5 class="mb-3">لوحة المسؤول</h5>
@@ -12,6 +12,7 @@
               <thead>
                 <tr>
                   <th>الدورة</th>
+                  <th>المدرب</th>
                   <th>البداية</th>
                   <th>النهاية</th>
                   <th>إجراءات</th>
@@ -21,6 +22,7 @@
                 {% for b in bookings %}
                 <tr>
                   <td>{{ b.title }}</td>
+                  <td>{{ b.trainer_name or b.owner_name }}</td>
                   <td>{{ b.start.strftime('%Y-%m-%d %H:%M') }}</td>
                   <td>{{ b.end.strftime('%Y-%m-%d %H:%M') }}</td>
                   <td>
@@ -36,15 +38,6 @@
         {% else %}
           <div class="text-muted">لا توجد حجوزات.</div>
         {% endif %}
-      </div>
-    </div>
-  </div>
-
-  <div class="col-lg-7">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h5 class="mb-3">التقويم العام</h5>
-        <div id="calendar" data-events-url="{{ url_for('api_bookings') }}"></div>
       </div>
     </div>
   </div>
