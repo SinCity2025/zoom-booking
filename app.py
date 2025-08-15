@@ -272,10 +272,7 @@ def api_bookings():
     } for b in Booking.query.all()]
     return jsonify(events)
 
-# ===== تشغيل محلي =====
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), debug=True)
-# ===== إدارة المستخدمين (عرض + ترقية/إلغاء أدمن) =====
+# ===== إدارة المستخدمين (عرض + ترقية/إلغاء/حذف/تعديل اسم) =====
 @app.route("/admin/users")
 @admin_required
 def admin_users():
@@ -306,7 +303,7 @@ def admin_remove_admin(uid):
     db.session.commit()
     flash(f"تم إلغاء أدمن عن {u.email}.", "info")
     return redirect(url_for("admin_users"))
-    # ===== حذف مستخدم (بحماية) =====
+
 @app.post("/admin/users/<int:uid>/delete")
 @admin_required
 def admin_delete_user(uid):
@@ -324,13 +321,32 @@ def admin_delete_user(uid):
         return redirect(url_for("admin_users"))
 
     # (اختياري) حذف حجوزات المستخدم قبل الحذف لتصفية البيانات
-    # بما أن Booking لا يرتبط بـ FK، نحذف حسب الإيميل:
     try:
         Booking.query.filter_by(owner_email=u.email).delete()
     except Exception:
-        pass  # تجاهل لو ما وُجدت سجلات
+        pass
 
     db.session.delete(u)
     db.session.commit()
     flash("تم حذف المستخدم وسجلّاته المرتبطة.", "info")
     return redirect(url_for("admin_users"))
+
+@app.post("/admin/users/<int:uid>/rename")
+@admin_required
+def admin_rename_user(uid):
+    u = User.query.get_or_404(uid)
+    new_name = (request.form.get("name") or "").strip()
+    if not new_name:
+        flash("الاسم لا يمكن أن يكون فارغًا.", "warning")
+        return redirect(url_for("admin_users"))
+    if len(new_name) > 120:
+        flash("الاسم طويل جدًا.", "warning")
+        return redirect(url_for("admin_users"))
+    u.name = new_name
+    db.session.commit()
+    flash("تم تحديث الاسم بنجاح.", "success")
+    return redirect(url_for("admin_users"))
+
+# ===== تشغيل محلي =====
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), debug=True)
