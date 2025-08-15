@@ -42,7 +42,7 @@
             <th>الاسم</th>
             <th>البريد</th>
             <th class="text-center">أدمن؟</th>
-            <th style="width:280px" class="text-center">إجراءات</th>
+            <th style="width:320px" class="text-center">إجراءات</th>
           </tr>
         </thead>
         <tbody>
@@ -61,19 +61,26 @@
             <td class="text-center">
               {% if not u.is_admin %}
                 <form class="d-inline" method="post" action="{{ url_for('admin_make_admin', uid=u.id) }}">
+                  <!-- {{ csrf_token() }} إذا كنت مفعل CSRF -->
                   <button class="btn btn-sm btn-primary">ترقية لأدمن</button>
                 </form>
               {% else %}
                 <form class="d-inline" method="post" action="{{ url_for('admin_remove_admin', uid=u.id) }}">
+                  <!-- {{ csrf_token() }} -->
                   <button class="btn btn-sm btn-outline-warning">إلغاء أدمن</button>
                 </form>
               {% endif %}
-              <!-- (اختياري) زر حذف:
-              <form class="d-inline" method="post" action="{{ url_for('admin_delete_user', uid=u.id) }}"
-                    onsubmit="return confirm('متأكد من حذف المستخدم؟');">
+
+              {# إخفاء زر الحذف عن المستخدم الحالي؛
+                 مسار السيرفر أيضاً يحمي من حذف آخر أدمن #}
+              {% if user and user.id != u.id %}
+              <form class="d-inline" method="post"
+                    action="{{ url_for('admin_delete_user', uid=u.id) }}"
+                    onsubmit="return confirm('متأكد من حذف هذا المستخدم؟ سيُحذف معه سجل حجوزاته.');">
+                <!-- {{ csrf_token() }} -->
                 <button class="btn btn-sm btn-outline-danger">حذف</button>
               </form>
-              -->
+              {% endif %}
             </td>
           </tr>
           {% else %}
