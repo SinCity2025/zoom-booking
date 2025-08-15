@@ -306,4 +306,3 @@ def admin_remove_admin(uid):
     db.session.commit()
     flash(f"تم إلغاء أدمن عن {u.email}.", "info")
     return redirect(url_for("admin_users"))
-    
