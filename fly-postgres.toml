@@ -1,0 +1,17 @@
+# Alternative config if you prefer Managed Postgres (Fly Postgres / Supabase)
+# Replace APP_NAME_PLACEHOLDER, keep DATABASE_URL as a secret via flyctl or Dashboard.
+app = "APP_NAME_PLACEHOLDER"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  FLASK_ENV = "production"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1

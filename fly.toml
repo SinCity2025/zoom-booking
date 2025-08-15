@@ -1,0 +1,23 @@
+# fly.toml — SQLite + Volume (default)
+# IMPORTANT: Replace APP_NAME_PLACEHOLDER with your Fly app name in Dashboard.
+app = "zoom-booking"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  # For SQLite: keep DB inside the mounted volume at /app/data
+  DATABASE_URL = "sqlite:////app/data/app.db"
+  FLASK_ENV = "production"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[mounts]]
+  source = "zoom_data"
+  destination = "/app/data"
