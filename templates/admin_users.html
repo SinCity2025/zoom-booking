@@ -1,14 +1,23 @@
 {% extends 'base.html' %}
 {% block content %}
+<style>
+  /* تقليل عرض أعمدة الاسم/الإيميل على الجوال مع قطع أنيق */
+  .col-truncate {
+    max-width: 180px;         /* عدّلها حسب ما يناسبك */
+  }
+  @media (max-width: 420px){
+    .col-truncate { max-width: 130px; }
+  }
+</style>
+
 <div class="row g-4">
   <div class="col-12">
     <div class="card shadow-sm">
       <div class="card-body">
-        <!-- شريط أزرار علوي بنفس نمط admin.html -->
-        <div class="d-flex flex-wrap gap-2 mb-3">
+
+        <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
           <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary btn-sm">الرجوع للحجوزات</a>
-          <!-- لو عندك كلاس مخصص للأزرار الرئيسية استبدل btn-primary به -->
-          <span class="badge bg-secondary align-self-center">إجمالي: {{ users|length }}</span>
+          <span class="badge bg-secondary">{{ users|length }} :إجمالي</span>
         </div>
 
         <h5 class="mb-3">إدارة المستخدمين</h5>
@@ -21,58 +30,71 @@
           {% endif %}
         {% endwith %}
 
-        {% if users %}
-          <div class="table-responsive">
-            <table class="table align-middle">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>الاسم</th>
-                  <th>البريد</th>
-                  <th class="text-center">أدمن؟</th>
-                  <th class="text-center" style="width:320px">إجراءات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for u in users %}
-                <tr>
-                  <td>{{ u.id }}</td>
-                  <td>{{ u.name }}</td>
-                  <td>{{ u.email }}</td>
-                  <td class="text-center">
-                    {% if u.is_admin %}
-                      <span class="badge bg-success">نعم</span>
-                    {% else %}
-                      <span class="badge bg-secondary">لا</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-center">
-                    {% if not u.is_admin %}
-                      <form class="d-inline" method="post" action="{{ url_for('admin_make_admin', uid=u.id) }}">
-                        <button class="btn btn-sm btn-primary">ترقية لأدمن</button>
-                      </form>
-                    {% else %}
-                      <form class="d-inline" method="post" action="{{ url_for('admin_remove_admin', uid=u.id) }}">
-                        <button class="btn btn-sm btn-outline-warning">إلغاء أدمن</button>
-                      </form>
-                    {% endif %}
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th class="text-nowrap">#</th>
+                <th class="text-nowrap">الاسم</th>
+                <th class="text-nowrap">البريد</th>
+                <th class="text-center text-nowrap">أدمن؟</th>
+                <th class="text-center text-nowrap" style="width:1%;">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in users %}
+              <tr>
+                <td class="text-muted">{{ u.id }}</td>
 
-                    {% if user and user.id != u.id %}
-                    <form class="d-inline" method="post"
-                          action="{{ url_for('admin_delete_user', uid=u.id) }}"
-                          onsubmit="return confirm('متأكد من حذف هذا المستخدم؟ سيُحذف معه سجل حجوزاته.');">
-                      <button class="btn btn-sm btn-outline-danger">حذف</button>
-                    </form>
-                    {% endif %}
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        {% else %}
-          <div class="text-muted">لا يوجد مستخدمون بعد.</div>
-        {% endif %}
+                <!-- الاسم والبريد مع قطع تلقائي -->
+                <td class="col-truncate text-truncate" title="{{ u.name }}">{{ u.name }}</td>
+                <td class="col-truncate text-truncate" title="{{ u.email }}">{{ u.email }}</td>
+
+                <td class="text-center">
+                  {% if u.is_admin %}
+                    <span class="badge bg-success">نعم</span>
+                  {% else %}
+                    <span class="badge bg-secondary">لا</span>
+                  {% endif %}
+                </td>
+
+                <!-- قائمة إجراءات منسدلة (أفضل للجوال) -->
+                <td class="text-center">
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                      إجراء
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end text-end">
+
+                      {% if not u.is_admin %}
+                      <form method="post" action="{{ url_for('admin_make_admin', uid=u.id) }}">
+                        <button class="dropdown-item" type="submit">ترقية لأدمن</button>
+                      </form>
+                      {% else %}
+                      <form method="post" action="{{ url_for('admin_remove_admin', uid=u.id) }}">
+                        <button class="dropdown-item" type="submit">إلغاء أدمن</button>
+                      </form>
+                      {% endif %}
+
+                      {% if user and user.id != u.id %}
+                      <form method="post"
+                            action="{{ url_for('admin_delete_user', uid=u.id) }}"
+                            onsubmit="return confirm('متأكد من حذف هذا المستخدم؟ سيُحذف معه سجل حجوزاته.');">
+                        <button class="dropdown-item text-danger" type="submit">حذف</button>
+                      </form>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" class="text-center text-muted py-4">لا يوجد مستخدمون بعد.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
       </div>
     </div>
   </div>
