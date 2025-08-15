@@ -50,18 +50,31 @@
                         <span class="badge bg-secondary">مستخدم</span>
                       {% endif %}
                     </div>
+
+                    <!-- الاسم (نص) -->
                     <div class="fw-semibold text-trim" title="{{ u.name }}">{{ u.name }}</div>
                     <div class="text-muted small text-trim" title="{{ u.email }}">{{ u.email }}</div>
+
+                    <!-- 🔹 فورم تعديل الاسم (جوال) -->
+                    <form class="d-flex gap-2 mt-2" method="post"
+                          action="{{ url_for('admin_rename_user', uid=u.id) }}">
+                      <!-- {{ csrf_token() }} إذا كنت مفعّل CSRF -->
+                      <input class="form-control form-control-sm" name="name"
+                             value="{{ u.name }}" placeholder="اسم جديد">
+                      <button class="btn btn-sm btn-outline-primary">حفظ</button>
+                    </form>
                   </div>
                 </div>
 
                 <div class="d-grid gap-2 mt-3">
                   {% if not u.is_admin %}
                     <form method="post" action="{{ url_for('admin_make_admin', uid=u.id) }}">
+                      <!-- {{ csrf_token() }} -->
                       <button class="btn btn-primary btn-sm">ترقية لأدمن</button>
                     </form>
                   {% else %}
                     <form method="post" action="{{ url_for('admin_remove_admin', uid=u.id) }}">
+                      <!-- {{ csrf_token() }} -->
                       <button class="btn btn-outline-warning btn-sm">إلغاء أدمن</button>
                     </form>
                   {% endif %}
@@ -70,6 +83,7 @@
                   <form method="post"
                         action="{{ url_for('admin_delete_user', uid=u.id) }}"
                         onsubmit="return confirm('متأكد من حذف هذا المستخدم؟ سيُحذف معه سجل حجوزاته.');">
+                    <!-- {{ csrf_token() }} -->
                     <button class="btn btn-outline-danger btn-sm">حذف المستخدم</button>
                   </form>
                   {% endif %}
@@ -100,7 +114,18 @@
                   {% for u in users %}
                   <tr>
                     <td class="text-muted">{{ u.id }}</td>
-                    <td>{{ u.name }}</td>
+
+                    <!-- 🔹 فورم تعديل الاسم (ديسكتوب) -->
+                    <td>
+                      <form class="d-flex gap-2" method="post"
+                            action="{{ url_for('admin_rename_user', uid=u.id) }}">
+                        <!-- {{ csrf_token() }} -->
+                        <input class="form-control form-control-sm" style="max-width: 220px"
+                               name="name" value="{{ u.name }}" placeholder="اسم جديد">
+                        <button class="btn btn-sm btn-outline-primary">حفظ</button>
+                      </form>
+                    </td>
+
                     <td>{{ u.email }}</td>
                     <td class="text-center">
                       {% if u.is_admin %}
@@ -113,10 +138,12 @@
                       <div class="btn-group btn-group-sm" role="group">
                         {% if not u.is_admin %}
                           <form method="post" action="{{ url_for('admin_make_admin', uid=u.id) }}">
+                            <!-- {{ csrf_token() }} -->
                             <button class="btn btn-primary">ترقية</button>
                           </form>
                         {% else %}
                           <form method="post" action="{{ url_for('admin_remove_admin', uid=u.id) }}">
+                            <!-- {{ csrf_token() }} -->
                             <button class="btn btn-outline-warning">إلغاء أدمن</button>
                           </form>
                         {% endif %}
@@ -124,6 +151,7 @@
                           <form method="post"
                                 action="{{ url_for('admin_delete_user', uid=u.id) }}"
                                 onsubmit="return confirm('متأكد من حذف هذا المستخدم؟');">
+                            <!-- {{ csrf_token() }} -->
                             <button class="btn btn-outline-danger">حذف</button>
                           </form>
                         {% endif %}
