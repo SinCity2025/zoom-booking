@@ -275,3 +275,34 @@ def api_bookings():
 # ===== تشغيل محلي =====
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), debug=True)
+# ===== إدارة المستخدمين (عرض + ترقية/إلغاء أدمن) =====
+@app.route("/admin/users")
+@admin_required
+def admin_users():
+    users = User.query.order_by(User.id.desc()).all()
+    return render_template("admin_users.html", user=current_user(), users=users)
+
+@app.post("/admin/users/<int:uid>/make_admin")
+@admin_required
+def admin_make_admin(uid):
+    u = User.query.get_or_404(uid)
+    if u.is_admin:
+        flash("المستخدم بالفعل أدمن.", "info")
+        return redirect(url_for("admin_users"))
+    u.is_admin = True
+    db.session.commit()
+    flash(f"تم ترقية {u.email} كأدمن.", "success")
+    return redirect(url_for("admin_users"))
+
+@app.post("/admin/users/<int:uid>/remove_admin")
+@admin_required
+def admin_remove_admin(uid):
+    u = User.query.get_or_404(uid)
+    # حماية: لا تزيل صلاحيات آخر أدمن
+    if u.is_admin and User.query.filter_by(is_admin=True).count() <= 1:
+        flash("لا يمكن إزالة صلاحيات آخر أدمن.", "warning")
+        return redirect(url_for("admin_users"))
+    u.is_admin = False
+    db.session.commit()
+    flash(f"تم إلغاء أدمن عن {u.email}.", "info")
+    return redirect(url_for("admin_users"))
