@@ -4,7 +4,10 @@
   <div class="col-12">
     <div class="card shadow-sm">
       <div class="card-body">
-        <a href="{{ url_for('export_csv') }}" class="btn btn-primary btn-sm mb-3">تصدير الحجوزات CSV</a>
+        <div class="d-flex gap-2 mb-3">
+          <a href="{{ url_for('export_csv') }}" class="btn btn-primary btn-sm">تصدير الحجوزات CSV</a>
+          <a href="{{ url_for('admin_users') }}" class="btn btn-success btn-sm">المستخدمون</a>
+        </div>
         <h5 class="mb-3">لوحة المسؤول</h5>
         <p class="text-muted small">يمكنك حذف الحجوزات المخالفة أو المتعارضة.</p>
         {% if bookings %}
