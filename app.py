@@ -306,3 +306,31 @@ def admin_remove_admin(uid):
     db.session.commit()
     flash(f"تم إلغاء أدمن عن {u.email}.", "info")
     return redirect(url_for("admin_users"))
+    # ===== حذف مستخدم (بحماية) =====
+@app.post("/admin/users/<int:uid>/delete")
+@admin_required
+def admin_delete_user(uid):
+    me = current_user()
+    u = User.query.get_or_404(uid)
+
+    # منع حذف نفسك
+    if me.id == u.id:
+        flash("لا يمكن حذف حسابك أنت.", "warning")
+        return redirect(url_for("admin_users"))
+
+    # منع حذف آخر أدمن
+    if u.is_admin and User.query.filter_by(is_admin=True).count() <= 1:
+        flash("لا يمكن حذف آخر أدمن في النظام.", "warning")
+        return redirect(url_for("admin_users"))
+
+    # (اختياري) حذف حجوزات المستخدم قبل الحذف لتصفية البيانات
+    # بما أن Booking لا يرتبط بـ FK، نحذف حسب الإيميل:
+    try:
+        Booking.query.filter_by(owner_email=u.email).delete()
+    except Exception:
+        pass  # تجاهل لو ما وُجدت سجلات
+
+    db.session.delete(u)
+    db.session.commit()
+    flash("تم حذف المستخدم وسجلّاته المرتبطة.", "info")
+    return redirect(url_for("admin_users"))
