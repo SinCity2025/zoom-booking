@@ -1,24 +1,13 @@
 {% extends 'base.html' %}
 {% block content %}
 <style>
-  /* قصّ نص الاسم/الإيميل داخل الكروت */
-  .text-trim {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .user-chip {
-    font-size: .8rem;
-    padding: .25rem .5rem;
-    border-radius: .5rem;
-  }
+  .text-trim { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 
 <div class="row g-4">
   <div class="col-12">
     <div class="card shadow-sm">
       <div class="card-body">
-
         <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
           <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary btn-sm">الرجوع للحجوزات</a>
           <span class="badge bg-secondary">{{ users|length }} :إجمالي</span>
@@ -29,12 +18,12 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for cat, msg in messages %}
-              <div class="alert alert-{{cat}}">{{ msg }}</div>
+              <div class="alert alert-{{cat}} mb-2">{{ msg }}</div>
             {% endfor %}
           {% endif %}
         {% endwith %}
 
-        {# ===================== عرض الجوال: كروت ===================== #}
+        <!-- موبايل: كروت -->
         <div class="d-md-none">
           {% if users %}
             <div class="vstack gap-3">
@@ -50,17 +39,11 @@
                         <span class="badge bg-secondary">مستخدم</span>
                       {% endif %}
                     </div>
-
-                    <!-- الاسم (نص) -->
                     <div class="fw-semibold text-trim" title="{{ u.name }}">{{ u.name }}</div>
                     <div class="text-muted small text-trim" title="{{ u.email }}">{{ u.email }}</div>
 
-                    <!-- 🔹 فورم تعديل الاسم (جوال) -->
-                    <form class="d-flex gap-2 mt-2" method="post"
-                          action="{{ url_for('admin_rename_user', uid=u.id) }}">
-                      <!-- {{ csrf_token() }} إذا كنت مفعّل CSRF -->
-                      <input class="form-control form-control-sm" name="name"
-                             value="{{ u.name }}" placeholder="اسم جديد">
+                    <form class="d-flex gap-2 mt-2" method="post" action="{{ url_for('admin_rename_user', uid=u.id) }}">
+                      <input class="form-control form-control-sm" name="name" value="{{ u.name }}" placeholder="اسم جديد" maxlength="120" required>
                       <button class="btn btn-sm btn-outline-primary">حفظ</button>
                     </form>
                   </div>
@@ -69,21 +52,16 @@
                 <div class="d-grid gap-2 mt-3">
                   {% if not u.is_admin %}
                     <form method="post" action="{{ url_for('admin_make_admin', uid=u.id) }}">
-                      <!-- {{ csrf_token() }} -->
                       <button class="btn btn-primary btn-sm">ترقية لأدمن</button>
                     </form>
                   {% else %}
                     <form method="post" action="{{ url_for('admin_remove_admin', uid=u.id) }}">
-                      <!-- {{ csrf_token() }} -->
                       <button class="btn btn-outline-warning btn-sm">إلغاء أدمن</button>
                     </form>
                   {% endif %}
 
                   {% if user and user.id != u.id %}
-                  <form method="post"
-                        action="{{ url_for('admin_delete_user', uid=u.id) }}"
-                        onsubmit="return confirm('متأكد من حذف هذا المستخدم؟ سيُحذف معه سجل حجوزاته.');">
-                    <!-- {{ csrf_token() }} -->
+                  <form method="post" action="{{ url_for('admin_delete_user', uid=u.id) }}" onsubmit="return confirm('متأكد من حذف هذا المستخدم؟ سيُحذف معه سجل حجوزاته.');">
                     <button class="btn btn-outline-danger btn-sm">حذف المستخدم</button>
                   </form>
                   {% endif %}
@@ -96,37 +74,31 @@
           {% endif %}
         </div>
 
-        {# ===================== عرض الديسكتوب/التابلت: جدول ===================== #}
+        <!-- ديسكتوب: جدول -->
         <div class="d-none d-md-block">
           {% if users %}
             <div class="table-responsive">
               <table class="table align-middle mb-0">
                 <thead>
                   <tr>
-                    <th class="text-nowrap">#</th>
-                    <th class="text-nowrap">الاسم</th>
-                    <th class="text-nowrap">البريد</th>
-                    <th class="text-center text-nowrap">أدمن؟</th>
-                    <th class="text-center text-nowrap" style="width:260px">إجراءات</th>
+                    <th>#</th>
+                    <th>الاسم</th>
+                    <th>البريد</th>
+                    <th class="text-center">أدمن؟</th>
+                    <th class="text-center" style="width:320px">إجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
                   {% for u in users %}
                   <tr>
                     <td class="text-muted">{{ u.id }}</td>
-
-                    <!-- 🔹 فورم تعديل الاسم (ديسكتوب) -->
-                    <td>
-                      <form class="d-flex gap-2" method="post"
-                            action="{{ url_for('admin_rename_user', uid=u.id) }}">
-                        <!-- {{ csrf_token() }} -->
-                        <input class="form-control form-control-sm" style="max-width: 220px"
-                               name="name" value="{{ u.name }}" placeholder="اسم جديد">
+                    <td class="text-trim" title="{{ u.name }}">
+                      <form class="d-flex gap-2" method="post" action="{{ url_for('admin_rename_user', uid=u.id) }}">
+                        <input class="form-control form-control-sm" style="max-width:220px" name="name" value="{{ u.name }}" placeholder="اسم جديد" maxlength="120" required>
                         <button class="btn btn-sm btn-outline-primary">حفظ</button>
                       </form>
                     </td>
-
-                    <td>{{ u.email }}</td>
+                    <td class="text-trim" title="{{ u.email }}">{{ u.email }}</td>
                     <td class="text-center">
                       {% if u.is_admin %}
                         <span class="badge bg-success">نعم</span>
@@ -135,24 +107,19 @@
                       {% endif %}
                     </td>
                     <td class="text-center">
-                      <div class="btn-group btn-group-sm" role="group">
+                      <div class="d-flex justify-content-center flex-wrap gap-2">
                         {% if not u.is_admin %}
                           <form method="post" action="{{ url_for('admin_make_admin', uid=u.id) }}">
-                            <!-- {{ csrf_token() }} -->
-                            <button class="btn btn-primary">ترقية</button>
+                            <button class="btn btn-primary btn-sm">ترقية</button>
                           </form>
                         {% else %}
                           <form method="post" action="{{ url_for('admin_remove_admin', uid=u.id) }}">
-                            <!-- {{ csrf_token() }} -->
-                            <button class="btn btn-outline-warning">إلغاء أدمن</button>
+                            <button class="btn btn-outline-warning btn-sm">إلغاء أدمن</button>
                           </form>
                         {% endif %}
                         {% if user and user.id != u.id %}
-                          <form method="post"
-                                action="{{ url_for('admin_delete_user', uid=u.id) }}"
-                                onsubmit="return confirm('متأكد من حذف هذا المستخدم؟');">
-                            <!-- {{ csrf_token() }} -->
-                            <button class="btn btn-outline-danger">حذف</button>
+                          <form method="post" action="{{ url_for('admin_delete_user', uid=u.id) }}" onsubmit="return confirm('متأكد من حذف هذا المستخدم؟');">
+                            <button class="btn btn-outline-danger btn-sm">حذف</button>
                           </form>
                         {% endif %}
                       </div>
